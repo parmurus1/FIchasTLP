@@ -1,7 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/Navbar";
-import type { Profile } from "@/types/database";
+import type { Profile, Ficha } from "@/types/database";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -32,7 +32,7 @@ export default async function FichaPage({ params }: PageProps) {
     .from("fichas")
     .select("*, profiles(*)")
     .eq("id", id)
-    .single();
+    .single() as { data: Ficha | null };
 
   if (!ficha) notFound();
 
