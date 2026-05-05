@@ -104,7 +104,8 @@ export function FichaClient({ ficha, isMestre }: { ficha: Ficha; isMestre: boole
   async function save() {
     setSaving(true);
     const supabase = createClient();
-    await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
       .from("fichas")
       .update({ dados: dados as Record<string, unknown>, nome })
       .eq("id", ficha.id);
