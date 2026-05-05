@@ -106,7 +106,7 @@ export function FichaClient({ ficha, isMestre }: { ficha: Ficha; isMestre: boole
     const supabase = createClient();
     await supabase
       .from("fichas")
-      .update({ dados, nome })
+      .update({ dados: dados as Record<string, unknown>, nome })
       .eq("id", ficha.id);
     setSaving(false);
     setSaved(true);
