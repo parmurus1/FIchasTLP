@@ -228,9 +228,10 @@ export function NovaFichaWizard({ playerId }: { playerId: string }) {
       testes_morte: { sucessos: 0, falhas: 0 },
     };
 
-    const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from("fichas")
-      .insert({ player_id: playerId, nome: state.nome, dados })
+      .insert({ player_id: playerId, nome: state.nome, dados: dados as Record<string, unknown> })
       .select("id")
       .single();
 
