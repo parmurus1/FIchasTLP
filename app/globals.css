@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --parchment: #e6c07b;
+  --parchment-dim: #c8a85a;
+  --stone-bg: #0d0b09;
+  --stone-card: #1e1912;
+  --stone-border: #3d3226;
+  --crimson: #c93333;
+  --ember: #e8920e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Scrollbar estilizada */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #16130e;
+}
+::-webkit-scrollbar-thumb {
+  background: #3d3226;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c8882a;
+}
+
+/* Seleção de texto */
+::selection {
+  background: rgba(200, 136, 42, 0.3);
+  color: #f8edd9;
+}
+
+@layer components {
+  /* Botão primário — âmbar */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           px-6 py-2.5
+           font-display text-sm tracking-widest uppercase
+           bg-parchment-500 text-stone-950
+           border border-parchment-400
+           transition-all duration-200
+           hover:bg-parchment-400 hover:shadow-glow-amber
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  /* Botão secundário — outline */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2
+           px-6 py-2.5
+           font-display text-sm tracking-widest uppercase text-parchment-300
+           border border-stone-600
+           transition-all duration-200
+           hover:border-parchment-500 hover:text-parchment-200
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  /* Botão perigo — vermelho */
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2
+           px-6 py-2.5
+           font-display text-sm tracking-widest uppercase text-parchment-200
+           border border-crimson-600 bg-crimson-600/20
+           transition-all duration-200
+           hover:bg-crimson-600/40 hover:shadow-glow-crimson
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  /* Card de pedra */
+  .card {
+    @apply bg-stone-900/80 border border-stone-700
+           shadow-inset-card backdrop-blur-sm;
+  }
+
+  /* Input de formulário */
+  .input {
+    @apply w-full bg-stone-800/60 border border-stone-600
+           text-parchment-100 placeholder-stone-500
+           px-4 py-2.5 font-body text-base
+           focus:outline-none focus:border-parchment-500
+           transition-colors duration-150;
+  }
+
+  /* Label */
+  .label {
+    @apply block font-display text-xs tracking-widest uppercase
+           text-parchment-400 mb-1.5;
+  }
+
+  /* Divisor decorativo */
+  .divider {
+    @apply flex items-center gap-3 text-stone-600 text-xs tracking-widest uppercase;
+  }
+  .divider::before,
+  .divider::after {
+    content: "";
+    @apply flex-1 h-px bg-stone-700;
+  }
+
+  /* Badge de role */
+  .badge-mestre {
+    @apply inline-flex items-center gap-1 px-2 py-0.5
+           font-display text-xs tracking-widest uppercase
+           text-crimson-400 border border-crimson-600/50 bg-crimson-600/10;
+  }
+
+  .badge-player {
+    @apply inline-flex items-center gap-1 px-2 py-0.5
+           font-display text-xs tracking-widest uppercase
+           text-parchment-400 border border-parchment-500/30 bg-parchment-500/10;
+  }
+
+  /* Runas decorativas */
+  .rune-divider {
+    @apply text-center text-parchment-500/40 text-2xl tracking-[0.5em] select-none;
+  }
+}
+
+/* Fundo com textura de pedra simulada */
+.bg-dungeon {
+  background-color: #0d0b09;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(200, 136, 42, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(201, 51, 51, 0.03) 0%, transparent 40%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255,255,255,0.005) 2px,
+      rgba(255,255,255,0.005) 4px
+    );
+}
+
+/* Brilho de vela animado */
+.candle-glow {
+  animation: candle 4s ease-in-out infinite;
+}
+
+@keyframes candle {
+  0%, 100% { box-shadow: 0 0 30px rgba(200, 136, 42, 0.2); }
+  50%       { box-shadow: 0 0 50px rgba(200, 136, 42, 0.35), 0 0 100px rgba(200, 136, 42, 0.1); }
+}
