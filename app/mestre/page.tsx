@@ -16,7 +16,7 @@ export default async function MestrePage() {
     .from("profiles")
     .select("*")
     .eq("id", user.id)
-    .single();
+    .single() as { data: Profile | null };
 
   if (!profile) redirect("/login");
   if (profile.role !== "mestre") redirect("/dashboard");

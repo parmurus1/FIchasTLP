@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/Navbar";
-import type { Ficha } from "@/types/database";
+import type { Ficha, Profile } from "@/types/database";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -14,7 +14,7 @@ export default async function DashboardPage() {
     .from("profiles")
     .select("*")
     .eq("id", user.id)
-    .single();
+    .single() as { data: Profile | null };
 
   if (!profile) redirect("/login");
   if (profile.role === "mestre") redirect("/mestre");
