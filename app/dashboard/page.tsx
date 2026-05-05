@@ -23,7 +23,7 @@ export default async function DashboardPage() {
     .from("fichas")
     .select("*")
     .eq("player_id", user.id)
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false }) as { data: Ficha[] | null };
 
   return (
     <div className="min-h-screen bg-dungeon">

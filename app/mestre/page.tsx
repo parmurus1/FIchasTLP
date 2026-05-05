@@ -26,13 +26,13 @@ export default async function MestrePage() {
     .from("profiles")
     .select("*")
     .eq("role", "player")
-    .order("username");
+    .order("username") as { data: Profile[] | null };
 
   // Busca todas as fichas com info do player
   const { data: fichas } = await supabase
     .from("fichas")
     .select("*, profiles(*)")
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false }) as { data: FichaComPlayer[] | null };
 
   const totalFichas = fichas?.length ?? 0;
   const totalPlayers = players?.length ?? 0;
