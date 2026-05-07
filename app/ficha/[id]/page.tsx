@@ -222,7 +222,7 @@ function DadosBasicosTab({ dados, updateDados, fichaId }: {
               <label className="font-display text-xs tracking-widest uppercase text-stone-500 block mb-1">{f.label}</label>
               <input
                 className="input-field w-full"
-                value={(dados as Record<string, unknown>)[f.key] as string ?? ""}
+                value={(dados as unknown as Record<string, unknown>)[f.key] as string ?? ""}
                 onChange={e => updateDados({ [f.key]: e.target.value } as Partial<FichaData>)}
               />
             </div>
