@@ -29,7 +29,7 @@ export default function ConfiguracoesPage() {
         .from("configuracoes_sistema")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .single() as { data: { id: string; user_id: string; dados: SystemSettings } | null };
 
       if (cfg) {
         setConfigId(cfg.id);
@@ -63,7 +63,7 @@ export default function ConfiguracoesPage() {
       const { data } = await supabase.from("configuracoes_sistema")
         .insert({ user_id: profile.id, dados })
         .select("id")
-        .single();
+        .single() as { data: { id: string } | null };
       if (data) setConfigId(data.id);
     }
 
