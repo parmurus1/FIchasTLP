@@ -42,7 +42,7 @@ export default function MestrePage() {
       if (!user) { router.push("/login"); return; }
 
       const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-      if (!prof || prof.role !== "mestre") { router.push("/dashboard"); return; }
+      if (!prof || (prof as Profile).role !== "mestre") { router.push("/dashboard"); return; }
       setProfile(prof as Profile);
 
       const { data: f } = await supabase

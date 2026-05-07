@@ -2,7 +2,7 @@
 // Grimório da Campanha — Types (v2)
 // ============================================================
 
-export type Role = "player" | "mestre";
+export type Role = string;
 
 export interface Profile {
   id: string;

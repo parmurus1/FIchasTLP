@@ -22,8 +22,8 @@ export default function ConfiguracoesPage() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.push("/login"); return; }
       const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-      if (!prof || prof.role !== "mestre") { router.push("/dashboard"); return; }
-      setProfile(prof);
+      if (!prof || (prof as Profile).role !== "mestre") { router.push("/dashboard"); return; }
+      setProfile(prof as Profile);
 
       const { data: cfg } = await supabase
         .from("configuracoes_sistema")
