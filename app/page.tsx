@@ -10,7 +10,7 @@ export default async function Home() {
       .from("profiles")
       .select("role")
       .eq("id", user.id)
-      .single();
+      .single() as { data: { role: string } | null };
 
     redirect(profile?.role === "mestre" ? "/mestre" : "/dashboard");
   }

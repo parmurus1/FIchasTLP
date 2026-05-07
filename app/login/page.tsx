@@ -35,7 +35,7 @@ export default function LoginPage() {
         .from("profiles")
         .select("role")
         .eq("id", user.id)
-        .single();
+        .single() as { data: { role: string } | null };
       router.push(profile?.role === "mestre" ? "/mestre" : "/dashboard");
       router.refresh();
     }

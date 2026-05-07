@@ -15,7 +15,7 @@ export default async function DashboardPage() {
     .from("profiles")
     .select("*")
     .eq("id", user.id)
-    .single();
+    .single() as { data: Profile | null };
 
   if (!profile) redirect("/login");
   if (profile.role === "mestre") redirect("/mestre");
