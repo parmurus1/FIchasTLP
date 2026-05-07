@@ -146,3 +146,12 @@
   0%, 100% { box-shadow: 0 0 30px rgba(200, 136, 42, 0.2); }
   50%       { box-shadow: 0 0 50px rgba(200, 136, 42, 0.35), 0 0 100px rgba(200, 136, 42, 0.1); }
 }
+
+/* Input field alias */
+.input-field {
+  @apply bg-stone-800/60 border border-stone-600
+         text-parchment-100 placeholder-stone-500
+         px-3 py-2 font-body text-sm
+         focus:outline-none focus:border-parchment-500
+         transition-colors duration-150;
+}

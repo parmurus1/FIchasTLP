@@ -1,9 +1,7 @@
 -- ============================================================
--- RPG Campaign Platform — Schema Supabase
--- Execute este SQL no SQL Editor do seu projeto Supabase
+-- Grimório da Campanha — Schema Supabase (v2)
 -- ============================================================
 
--- 1. Tabela de perfis (estende auth.users)
 CREATE TABLE IF NOT EXISTS public.profiles (
   id         UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username   TEXT NOT NULL UNIQUE,
@@ -13,7 +11,6 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 2. Trigger para criar perfil automaticamente ao registrar
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -32,17 +29,44 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 3. Tabela de fichas de personagem (estrutura base — será expandida)
 CREATE TABLE IF NOT EXISTS public.fichas (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   player_id  UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   nome       TEXT NOT NULL DEFAULT 'Novo Personagem',
-  dados      JSONB NOT NULL DEFAULT '{}',   -- todos os campos da ficha ficam aqui
+  dados      JSONB NOT NULL DEFAULT '{}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 4. Trigger para atualizar updated_at automaticamente
+CREATE TABLE IF NOT EXISTS public.rolagens (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ficha_id        UUID REFERENCES public.fichas(id) ON DELETE CASCADE,
+  user_id         UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  tipo            TEXT NOT NULL DEFAULT 'pericia',
+  nome_rolagem    TEXT NOT NULL,
+  dado_base       INTEGER NOT NULL DEFAULT 20,
+  valor_dado      INTEGER NOT NULL,
+  modificador     INTEGER NOT NULL DEFAULT 0,
+  resultado_total INTEGER NOT NULL,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.iniciativas (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nome             TEXT NOT NULL,
+  iniciativa_valor INTEGER NOT NULL DEFAULT 0,
+  tipo             TEXT NOT NULL DEFAULT 'jogador' CHECK (tipo IN ('jogador', 'monstro', 'npc')),
+  ativo            BOOLEAN NOT NULL DEFAULT false,
+  ordem            INTEGER NOT NULL DEFAULT 0,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.configuracoes_sistema (
+  id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  dados   JSONB NOT NULL DEFAULT '{}'
+);
+
 CREATE OR REPLACE FUNCTION public.set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -61,51 +85,50 @@ CREATE TRIGGER profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- ============================================================
--- Row Level Security (RLS)
--- ============================================================
+ALTER TABLE public.profiles              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.fichas                ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rolagens              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.iniciativas           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.configuracoes_sistema ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.fichas   ENABLE ROW LEVEL SECURITY;
+-- Profiles
+CREATE POLICY "profiles_select" ON public.profiles FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "profiles_update" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
--- Profiles: qualquer usuário autenticado pode ver perfis
-CREATE POLICY "profiles_select" ON public.profiles
-  FOR SELECT USING (auth.role() = 'authenticated');
+-- Fichas
+CREATE POLICY "fichas_select" ON public.fichas FOR SELECT USING (
+  auth.uid() = player_id OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'mestre')
+);
+CREATE POLICY "fichas_insert" ON public.fichas FOR INSERT WITH CHECK (auth.uid() = player_id);
+CREATE POLICY "fichas_update" ON public.fichas FOR UPDATE USING (
+  auth.uid() = player_id OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'mestre')
+);
+CREATE POLICY "fichas_delete" ON public.fichas FOR DELETE USING (
+  auth.uid() = player_id OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'mestre')
+);
 
--- Profiles: só pode editar o próprio perfil
-CREATE POLICY "profiles_update" ON public.profiles
-  FOR UPDATE USING (auth.uid() = id);
+-- Rolagens
+CREATE POLICY "rolagens_select" ON public.rolagens FOR SELECT USING (
+  auth.uid() = user_id OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'mestre')
+);
+CREATE POLICY "rolagens_insert" ON public.rolagens FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Fichas: player vê só a própria; mestre vê todas
-CREATE POLICY "fichas_select_player" ON public.fichas
-  FOR SELECT USING (
-    auth.uid() = player_id
-    OR EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'mestre'
-    )
-  );
+-- Iniciativas
+CREATE POLICY "iniciativas_select" ON public.iniciativas FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "iniciativas_insert" ON public.iniciativas FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'mestre')
+);
+CREATE POLICY "iniciativas_update" ON public.iniciativas FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'mestre')
+);
+CREATE POLICY "iniciativas_delete" ON public.iniciativas FOR DELETE USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'mestre')
+);
 
--- Fichas: player cria só para si mesmo
-CREATE POLICY "fichas_insert_player" ON public.fichas
-  FOR INSERT WITH CHECK (auth.uid() = player_id);
+-- Configurações
+CREATE POLICY "config_select" ON public.configuracoes_sistema FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "config_insert" ON public.configuracoes_sistema FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "config_update" ON public.configuracoes_sistema FOR UPDATE USING (auth.uid() = user_id);
 
--- Fichas: player edita só a própria; mestre edita qualquer
-CREATE POLICY "fichas_update" ON public.fichas
-  FOR UPDATE USING (
-    auth.uid() = player_id
-    OR EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'mestre'
-    )
-  );
-
--- Fichas: player deleta só a própria; mestre deleta qualquer
-CREATE POLICY "fichas_delete" ON public.fichas
-  FOR DELETE USING (
-    auth.uid() = player_id
-    OR EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'mestre'
-    )
-  );
+ALTER PUBLICATION supabase_realtime ADD TABLE public.rolagens;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.iniciativas;
