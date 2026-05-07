@@ -52,7 +52,7 @@ export default function FichaPage() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.push("/login"); return; }
 
-      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single() as { data: Profile | null };
+      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
       if (!prof) { router.push("/login"); return; }
       setProfile(prof as Profile);
       setIsMestre(prof.role === "mestre");

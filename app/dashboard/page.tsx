@@ -15,7 +15,7 @@ export default async function DashboardPage() {
     .from("profiles")
     .select("*")
     .eq("id", user.id)
-    .single() as { data: Profile | null };
+    .single();
 
   if (!profile) redirect("/login");
   if (profile.role === "mestre") redirect("/mestre");
@@ -24,7 +24,7 @@ export default async function DashboardPage() {
     .from("fichas")
     .select("*")
     .eq("player_id", user.id)
-    .order("updated_at", { ascending: false }) as { data: Ficha[] | null };
+    .order("updated_at", { ascending: false });
 
   return (
     <div className="min-h-screen bg-dungeon">

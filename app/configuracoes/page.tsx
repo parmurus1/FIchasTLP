@@ -21,7 +21,7 @@ export default function ConfiguracoesPage() {
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.push("/login"); return; }
-      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single() as { data: Profile | null };
+      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
       if (!prof || prof.role !== "mestre") { router.push("/dashboard"); return; }
       setProfile(prof);
 
@@ -29,7 +29,7 @@ export default function ConfiguracoesPage() {
         .from("configuracoes_sistema")
         .select("*")
         .eq("user_id", user.id)
-        .single() as { data: { id: string; user_id: string; dados: SystemSettings } | null };
+        .single();
 
       if (cfg) {
         setConfigId(cfg.id);
@@ -63,7 +63,7 @@ export default function ConfiguracoesPage() {
       const { data } = await supabase.from("configuracoes_sistema")
         .insert({ user_id: profile.id, dados })
         .select("id")
-        .single() as { data: { id: string } | null };
+        .single();
       if (data) setConfigId(data.id);
     }
 

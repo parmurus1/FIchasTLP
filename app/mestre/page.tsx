@@ -41,7 +41,7 @@ export default function MestrePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
 
-      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single() as { data: Profile | null };
+      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
       if (!prof || prof.role !== "mestre") { router.push("/dashboard"); return; }
       setProfile(prof as Profile);
 
