@@ -19,8 +19,8 @@ export async function adicionarIniciativa(
 
   const novaOrdem = (existing?.ordem ?? 0) + 1;
 
-  const { data, error } = await supabase
-    .from("iniciativas")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("iniciativas") as any)
     .insert({ nome, iniciativa_valor: valor, tipo, ativo: false, ordem: novaOrdem })
     .select("*")
     .single();
@@ -35,8 +35,8 @@ export async function atualizarOrdem(
   const supabase = await createClient();
 
   for (const item of lista) {
-    await supabase
-      .from("iniciativas")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from("iniciativas") as any)
       .update({ ordem: item.ordem, ativo: item.ativo })
       .eq("id", item.id);
   }
@@ -67,7 +67,9 @@ export async function removerIniciativa(id: string): Promise<{ success: boolean 
 
 export async function marcarAtivo(id: string): Promise<{ success: boolean }> {
   const supabase = await createClient();
-  await supabase.from("iniciativas").update({ ativo: false }).neq("id", "00000000-0000-0000-0000-000000000000");
-  await supabase.from("iniciativas").update({ ativo: true }).eq("id", id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from("iniciativas") as any).update({ ativo: false }).neq("id", "00000000-0000-0000-0000-000000000000");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from("iniciativas") as any).update({ ativo: true }).eq("id", id);
   return { success: true };
 }

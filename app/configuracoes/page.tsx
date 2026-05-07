@@ -58,9 +58,11 @@ export default function ConfiguracoesPage() {
     const dados: SystemSettings = { ...settings, regras_customizadas: regras };
 
     if (configId) {
-      await supabase.from("configuracoes_sistema").update({ dados }).eq("id", configId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from("configuracoes_sistema") as any).update({ dados }).eq("id", configId);
     } else {
-      const { data } = await supabase.from("configuracoes_sistema")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from("configuracoes_sistema") as any)
         .insert({ user_id: profile.id, dados })
         .select("id")
         .single() as { data: { id: string } | null };
