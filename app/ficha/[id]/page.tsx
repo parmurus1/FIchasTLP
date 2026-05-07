@@ -52,16 +52,16 @@ export default function FichaPage() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.push("/login"); return; }
 
-      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single() as { data: Profile | null };
       if (!prof) { router.push("/login"); return; }
-      setProfile(prof as Profile);
+      setProfile(prof);
       setIsMestre(prof.role === "mestre");
 
       const { data: f } = await supabase
         .from("fichas")
         .select("*, profiles(*)")
         .eq("id", id)
-        .single();
+        .single() as { data: Ficha | null };
 
       if (!f) { router.push("/dashboard"); return; }
       if (prof.role === "player" && f.player_id !== user.id) { router.push("/dashboard"); return; }
