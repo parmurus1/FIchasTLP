@@ -17,6 +17,7 @@ export async function finalizarCriacao(
     .single() as { data: { id: string } | null; error: { message: string } | null };
 
   if (error) return { error: error.message };
+  if (!data) return { error: "Nenhum dado retornado" };
   return { id: data.id };
 }
 
