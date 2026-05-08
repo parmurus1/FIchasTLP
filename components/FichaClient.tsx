@@ -83,7 +83,7 @@ const TABS = [
 export function FichaClient({ ficha, isMestre }: { ficha: Ficha; isMestre: boolean }) {
   const router = useRouter();
   const [tab, setTab] = useState("personagem");
-  const [dados, setDados] = useState<FichaDados>(ficha.dados as FichaDados);
+  const [dados, setDados] = useState<FichaDados>(ficha.dados as unknown as FichaDados);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [editNome, setEditNome] = useState(false);
