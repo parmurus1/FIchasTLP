@@ -66,8 +66,8 @@ export default function FichaPage() {
       if (!f) { router.push("/dashboard"); return; }
       if (prof.role === "player" && f.player_id !== user.id) { router.push("/dashboard"); return; }
 
-      setFicha(f as Ficha);
-      setDados(f.dados as FichaData);
+      setFicha(f as unknown as Ficha);
+      setDados(f.dados as unknown as FichaData);
     });
   }, [id, router]);
 

@@ -10,11 +10,11 @@ export async function finalizarCriacao(
 ): Promise<{ id: string } | { error: string }> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("fichas")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("fichas") as any)
     .insert({ player_id: playerId, nome, dados: dados as unknown as Record<string, unknown> })
     .select("id")
-    .single();
+    .single() as { data: { id: string } | null; error: { message: string } | null };
 
   if (error) return { error: error.message };
   return { id: data.id };
@@ -26,8 +26,8 @@ export async function atualizarFicha(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
 
-  const { error } = await supabase
-    .from("fichas")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from("fichas") as any)
     .update({ dados: dados as unknown as Record<string, unknown> })
     .eq("id", fichaId);
 

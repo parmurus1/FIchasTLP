@@ -66,7 +66,7 @@ export default async function DashboardPage() {
 }
 
 function FichaCard({ ficha }: { ficha: Ficha }) {
-  const d = ficha.dados as FichaData;
+  const d = ficha.dados as unknown as FichaData;
   const pvPct = d.combate ? (d.combate.pv_atual / d.combate.pv_maximo) * 100 : null;
 
   async function handleDelete(formData: FormData) {

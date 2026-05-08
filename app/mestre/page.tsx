@@ -49,7 +49,7 @@ export default function MestrePage() {
         .from("fichas")
         .select("*, profiles(*)")
         .order("updated_at", { ascending: false });
-      setFichas((f ?? []) as Ficha[]);
+      setFichas((f ?? []) as unknown as Ficha[]);
 
       const { data: ini } = await supabase
         .from("iniciativas")
@@ -87,7 +87,7 @@ export default function MestrePage() {
   }
 
   async function handleAddFichaIniciativa(ficha: Ficha) {
-    const dados = ficha.dados as FichaData;
+    const dados = ficha.dados as unknown as FichaData;
     const bonus = dados.combate?.iniciativa_bonus ?? 0;
     const roll = Math.floor(Math.random() * 20) + 1 + bonus;
     await adicionarIniciativa(ficha.nome, roll, "jogador");
@@ -163,7 +163,7 @@ export default function MestrePage() {
         {tab === "personagens" && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {fichas.map(f => {
-              const d = f.dados as FichaData;
+              const d = f.dados as unknown as FichaData;
               const pvPct = d.combate ? (d.combate.pv_atual / d.combate.pv_maximo) * 100 : 100;
               return (
                 <Link key={f.id} href={`/ficha/${f.id}`}>
@@ -176,7 +176,7 @@ export default function MestrePage() {
                         </p>
                       </div>
                       <span className="font-body text-xs text-stone-500">
-                        {(f as Ficha & { profiles: Profile }).profiles?.username}
+                        {(f as unknown as Ficha & { profiles: Profile }).profiles?.username}
                       </span>
                     </div>
 
