@@ -17,8 +17,8 @@ export async function realizarRolagem(
   const valorDado = Math.floor(Math.random() * 20) + 1;
   const total = valorDado + modificador;
 
-  const { data, error } = await supabase
-    .from("rolagens")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("rolagens") as any)
     .insert({
       ficha_id: fichaId,
       user_id: user.id,
@@ -42,8 +42,8 @@ export async function buscarRolagens(
 ): Promise<Rolagem[]> {
   const supabase = await createClient();
 
-  let query = supabase
-    .from("rolagens")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase.from("rolagens") as any)
     .select("*, profiles(username), fichas(id, nome)")
     .order("created_at", { ascending: false })
     .limit(limit);
