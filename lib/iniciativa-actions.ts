@@ -10,12 +10,12 @@ export async function adicionarIniciativa(
 ): Promise<{ entry: IniciativaEntry } | { error: string }> {
   const supabase = await createClient();
 
-  const { data: existing } = await supabase
-    .from("iniciativas")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: existing } = await (supabase.from("iniciativas") as any)
     .select("ordem")
     .order("ordem", { ascending: false })
     .limit(1)
-    .single();
+    .single() as { data: { ordem: number } | null };
 
   const novaOrdem = (existing?.ordem ?? 0) + 1;
 
@@ -52,8 +52,8 @@ export async function limparIniciativas(): Promise<{ success: boolean }> {
 
 export async function getIniciativas(): Promise<IniciativaEntry[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("iniciativas")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from("iniciativas") as any)
     .select("*")
     .order("iniciativa_valor", { ascending: false });
   return (data ?? []) as IniciativaEntry[];
