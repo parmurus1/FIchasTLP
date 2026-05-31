@@ -3,12 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { registrarUsuario } from "@/lib/auth-actions";
 import type { Role } from "@/types/database";
-
-// Defina aqui a senha secreta do mestre para proteger o registro
-// Em produção, coloque isso no .env.local como NEXT_PUBLIC_MASTER_SECRET
-const MASTER_SECRET = process.env.NEXT_PUBLIC_MASTER_SECRET ?? "arcana-mestre-2024";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -23,31 +19,18 @@ export default function RegisterPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-
-    if (role === "mestre" && masterKey !== MASTER_SECRET) {
-      setError("Chave de Mestre inválida.");
-      return;
-    }
-
     setLoading(true);
-    const supabase = createClient();
 
-    const { error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { username, role },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    // Validação feita no servidor via Server Action (MASTER_SECRET não exposto)
+    const result = await registrarUsuario(email, password, username, role, masterKey);
 
-    if (authError) {
-      setError(authError.message);
+    if (!result.success) {
+      setError(result.error ?? "Erro ao criar conta.");
       setLoading(false);
       return;
     }
 
-    router.push(role === "mestre" ? "/mestre" : "/dashboard");
+    router.push(result.redirectTo ?? "/dashboard");
     router.refresh();
   }
 
