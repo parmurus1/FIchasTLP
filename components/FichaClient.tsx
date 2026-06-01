@@ -12,6 +12,8 @@ import {
   FAIXAS_CORRUPCAO,
   FAIXAS_REPUTACAO,
   MODULOS_BASE,
+  ARMADURAS,
+  BONUS_SALVAMENTO,
   getModificador,
   getModStr,
   getReputacaoLabel,
@@ -23,6 +25,14 @@ import type { Ficha } from "@/types/database";
 // ─────────────────────────────────────────────────────────────
 interface AtributosChar {
   FOR: number; DES: number; CON: number; INT: number; CAR: number;
+}
+
+interface ItemInventario {
+  id: string;
+  nome: string;
+  quantidade: number;
+  descricao?: string;
+  peso?: number;
 }
 
 interface FichaDados {
@@ -48,6 +58,10 @@ interface FichaDados {
   };
   notas?: string;
   inventario?: string;
+  itens?: ItemInventario[];
+  armadura_id?: string;
+  escudo_id?: string;
+  ca_bonus_extra?: number;
   testes_morte?: { sucessos: number; falhas: number };
 }
 
@@ -56,9 +70,9 @@ const ATRIBUTO_LABELS: Record<string, string> = {
 };
 
 const SAVE_LABELS = [
-  { key: 'fortitude', label: 'Fortitude', attr: 'CON' },
-  { key: 'reflexos', label: 'Reflexos', attr: 'DES' },
-  { key: 'vontade', label: 'Vontade', attr: 'INT' },
+  { key: 'fortitude', label: 'Fortitude', attr: 'CON' as const },
+  { key: 'reflexos',  label: 'Reflexos',  attr: 'DES' as const },
+  { key: 'vontade',   label: 'Vontade',   attr: 'CAR' as const },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -181,15 +195,21 @@ export function FichaClient({ ficha, isMestre }: { ficha: Ficha; isMestre: boole
         </div>
 
         {/* Quick saves */}
-        <div className="flex gap-3 mt-3 pt-3 border-t border-stone-700/50">
+        <div className="flex gap-3 mt-3 pt-3 border-t border-stone-700/50 flex-wrap">
           {SAVE_LABELS.map(sv => {
-            const mod = getModificador(atributos[sv.attr as keyof AtributosChar]);
+            const attrMod = getModificador(atributos[sv.attr]);
+            const profNivel = classeData?.salvamentos[sv.key as keyof typeof classeData.salvamentos] ?? '';
+            const profBonus = BONUS_SALVAMENTO[profNivel as keyof typeof BONUS_SALVAMENTO] ?? 0;
+            const total = attrMod + profBonus;
+            const profLabel = profNivel === 'E' ? 'Esp' : profNivel === 'T' ? 'Trei' : '—';
+            const profColor = profNivel === 'E' ? 'text-parchment-400' : profNivel === 'T' ? 'text-emerald-500' : 'text-stone-600';
             return (
-              <div key={sv.key} className="text-center">
+              <div key={sv.key} className="text-center min-w-[52px]">
                 <p className="font-display text-xs tracking-widest text-stone-600 uppercase">{sv.label}</p>
-                <p className={`font-display text-sm ${mod >= 0 ? 'text-emerald-400' : 'text-crimson-400'}`}>
-                  {getModStr(mod)}
+                <p className={`font-display text-base ${total >= 0 ? 'text-emerald-400' : 'text-crimson-400'}`}>
+                  {getModStr(total)}
                 </p>
+                <p className={`font-display text-[10px] ${profColor}`}>{profLabel}</p>
               </div>
             );
           })}
@@ -354,26 +374,65 @@ function PersonagemTab({ atributos, ancestralidadeData, classeData, dados, onUpd
           </div>
         )}
 
-        {classeData && (
-          <div className="card p-4">
-            <p className="font-display text-xs tracking-widest uppercase text-stone-500 mb-3">
-              Habilidade de Classe
-            </p>
-            <p className="font-display text-sm text-parchment-300 mb-1">{classeData.habilidade}</p>
-            <p className="font-body text-xs text-stone-400">{classeData.habilidade_desc}</p>
-            <div className="mt-3 pt-3 border-t border-stone-700">
-              <p className="font-display text-xs text-stone-600 uppercase mb-1">Escolhas</p>
-              <p className="font-body text-xs text-stone-400">
-                <span className="text-stone-500">Escola/Estilo:</span>{" "}
-                {classeData.escolas.find(e => e.id === dados.escola)?.nome ?? dados.escola ?? "—"}
-              </p>
-              <p className="font-body text-xs text-stone-400 mt-0.5">
-                <span className="text-stone-500">Talento:</span>{" "}
-                {classeData.talentos.find(t => t.id === dados.talento_classe)?.nome ?? dados.talento_classe ?? "—"}
-              </p>
+        {classeData && (() => {
+          const escolhaEscola = classeData.escolas.find(e => e.id === dados.escola);
+          const escolhaTalento = classeData.talentos.find(t => t.id === dados.talento_classe);
+          return (
+            <div className="card p-4 space-y-3">
+              <div>
+                <p className="font-display text-xs tracking-widest uppercase text-stone-500 mb-2">
+                  Habilidade de Classe
+                </p>
+                <p className="font-display text-sm text-parchment-300 mb-0.5">{classeData.habilidade}</p>
+                <p className="font-body text-xs text-stone-400">{classeData.habilidade_desc}</p>
+              </div>
+
+              {/* Salvamentos da classe */}
+              <div className="pt-2 border-t border-stone-700/50">
+                <p className="font-display text-xs text-stone-600 uppercase mb-1.5">Salvamentos</p>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  {SAVE_LABELS.map(sv => {
+                    const nivel = classeData.salvamentos[sv.key as keyof typeof classeData.salvamentos];
+                    const label = nivel === 'E' ? 'Especialista' : nivel === 'T' ? 'Treinado' : 'Sem prof.';
+                    const color = nivel === 'E' ? 'text-parchment-400' : nivel === 'T' ? 'text-emerald-500' : 'text-stone-600';
+                    return (
+                      <div key={sv.key} className="bg-stone-800/50 px-2 py-1.5 border border-stone-700/50">
+                        <p className="font-display text-xs text-stone-500 uppercase">{sv.label}</p>
+                        <p className={`font-display text-xs mt-0.5 ${color}`}>{label}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Escola escolhida */}
+              {escolhaEscola && (
+                <div className="pt-2 border-t border-stone-700/50">
+                  <p className="font-display text-xs text-stone-600 uppercase mb-1">
+                    Escola / Estilo / Doutrina
+                  </p>
+                  <p className="font-display text-sm text-parchment-300">{escolhaEscola.nome}</p>
+                  <p className="font-body text-xs text-stone-400 mt-0.5 italic">{escolhaEscola.desc}</p>
+                </div>
+              )}
+
+              {/* Talento escolhido */}
+              {escolhaTalento && (
+                <div className="pt-2 border-t border-stone-700/50">
+                  <p className="font-display text-xs text-stone-600 uppercase mb-1">Talento de Classe</p>
+                  <p className="font-display text-sm text-parchment-300">{escolhaTalento.nome}</p>
+                  <p className="font-body text-xs text-stone-400 mt-0.5 italic">{escolhaTalento.desc}</p>
+                </div>
+              )}
+
+              {(!escolhaEscola || !escolhaTalento) && (
+                <p className="font-body text-xs text-stone-600 italic pt-1 border-t border-stone-700/30">
+                  Escola e talento definidos na criação do personagem.
+                </p>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* Idiomas */}
@@ -488,7 +547,7 @@ function PericiasTab({ dados, atributos, onUpdate }: {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Tab: Inventário
+// Tab: Inventário (itens estruturados + armadura)
 // ─────────────────────────────────────────────────────────────
 function InventarioTab({ dinheiro, dados, onUpdate }: {
   dinheiro: { PC: number; PP: number; PO: number; PPl: number };
@@ -502,13 +561,118 @@ function InventarioTab({ dinheiro, dados, onUpdate }: {
     { key: 'PPl', label: 'Peças de Platina', desc: 'Raríssima', color: 'text-sky-300' },
   ];
 
+  const itens = def(dados.itens, [] as ItemInventario[]);
+  const [novoNome, setNovoNome] = useState("");
+  const [novoDesc, setNovoDesc] = useState("");
+  const [novoPeso, setNovoPeso] = useState("");
+  const [expandido, setExpandido] = useState<string | null>(null);
+
   function updMoeda(key: keyof typeof dinheiro, val: number) {
     onUpdate({ dinheiro: { ...dinheiro, [key]: Math.max(0, val) } });
   }
 
+  function addItem() {
+    if (!novoNome.trim()) return;
+    const item: ItemInventario = {
+      id: Date.now().toString(),
+      nome: novoNome.trim(),
+      quantidade: 1,
+      descricao: novoDesc.trim() || undefined,
+      peso: novoPeso ? parseFloat(novoPeso) : undefined,
+    };
+    onUpdate({ itens: [...itens, item] });
+    setNovoNome(""); setNovoDesc(""); setNovoPeso("");
+  }
+
+  function updItem(id: string, patch: Partial<ItemInventario>) {
+    onUpdate({ itens: itens.map(it => it.id === id ? { ...it, ...patch } : it) });
+  }
+
+  function removeItem(id: string) {
+    onUpdate({ itens: itens.filter(it => it.id !== id) });
+  }
+
+  // Armadura
+  const armadura = ARMADURAS.find(a => a.id === dados.armadura_id && a.tipo !== 'escudo') ?? ARMADURAS[0];
+  const escudo = ARMADURAS.find(a => a.id === dados.escudo_id && a.tipo === 'escudo');
+  const atributos: AtributosChar = def(dados.atributos, { FOR: 10, DES: 10, CON: 10, INT: 10, CAR: 10 });
+  const desMod = getModificador(atributos.DES);
+  const caTotal = 10 + armadura.ca_bonus + desMod + (escudo?.ca_bonus ?? 0) + (dados.ca_bonus_extra ?? 0);
+
   return (
     <div className="space-y-4">
-      {/* Dinheiro */}
+
+      {/* ── Armadura ── */}
+      <div className="card p-5">
+        <p className="font-display text-xs tracking-widest uppercase text-stone-500 mb-3">Armadura & Defesa</p>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="text-center px-4 py-2 border border-parchment-500/40 bg-parchment-500/5">
+            <p className="font-display text-xs text-stone-500 uppercase">CA Total</p>
+            <p className="font-display text-3xl text-parchment-200">{caTotal}</p>
+          </div>
+          <div className="text-xs text-stone-500 font-body italic">
+            10 + {armadura.ca_bonus} (arm.) + {desMod >= 0 ? '+' : ''}{desMod} (DES)
+            {escudo ? ` + ${escudo.ca_bonus} (escudo)` : ''}
+            {(dados.ca_bonus_extra ?? 0) > 0 ? ` + ${dados.ca_bonus_extra} (extra)` : ''}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+          {ARMADURAS.filter(a => a.tipo !== 'escudo').map(a => (
+            <button
+              key={a.id}
+              onClick={() => onUpdate({ armadura_id: a.id })}
+              className={`text-left p-2.5 border transition-all ${
+                armadura.id === a.id
+                  ? 'border-parchment-500/50 bg-parchment-500/5'
+                  : 'border-stone-700 hover:border-stone-600'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className={`font-display text-sm ${armadura.id === a.id ? 'text-parchment-200' : 'text-stone-400'}`}>
+                  {a.nome}
+                </span>
+                <span className={`font-display text-sm ${armadura.id === a.id ? 'text-emerald-400' : 'text-stone-600'}`}>
+                  +{a.ca_bonus}
+                </span>
+              </div>
+              <p className="font-body text-xs text-stone-600 mt-0.5">{a.desc}</p>
+            </button>
+          ))}
+        </div>
+        <p className="font-display text-xs text-stone-600 uppercase mb-1 mt-3">Escudo (opcional)</p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onUpdate({ escudo_id: undefined })}
+            className={`px-3 py-1.5 border text-xs font-display transition-all ${
+              !escudo ? 'border-parchment-500/40 text-parchment-300' : 'border-stone-700 text-stone-500'
+            }`}
+          >
+            Sem escudo
+          </button>
+          {ARMADURAS.filter(a => a.tipo === 'escudo').map(a => (
+            <button
+              key={a.id}
+              onClick={() => onUpdate({ escudo_id: a.id })}
+              className={`px-3 py-1.5 border text-xs font-display transition-all ${
+                escudo?.id === a.id ? 'border-parchment-500/40 text-parchment-300' : 'border-stone-700 text-stone-500'
+              }`}
+            >
+              {a.nome} (+{a.ca_bonus})
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 mt-3">
+          <span className="font-display text-xs text-stone-600 uppercase">CA Bônus Extra</span>
+          <button onClick={() => onUpdate({ ca_bonus_extra: Math.max(0, (dados.ca_bonus_extra ?? 0) - 1) })}
+            className="w-6 h-6 border border-stone-700 text-stone-500 hover:border-crimson-700 font-display text-sm">−</button>
+          <span className="font-display text-sm text-parchment-300 w-6 text-center">{dados.ca_bonus_extra ?? 0}</span>
+          <button onClick={() => onUpdate({ ca_bonus_extra: (dados.ca_bonus_extra ?? 0) + 1 })}
+            className="w-6 h-6 border border-stone-700 text-stone-500 hover:border-emerald-700 font-display text-sm">+</button>
+          <span className="font-body text-xs text-stone-600 italic">(magias, feitiços, habilidades)</span>
+        </div>
+      </div>
+
+      {/* ── Dinheiro ── */}
       <div className="card p-5">
         <p className="font-display text-xs tracking-widest uppercase text-stone-500 mb-3">Dinheiro</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -540,19 +704,113 @@ function InventarioTab({ dinheiro, dados, onUpdate }: {
         </div>
       </div>
 
-      {/* Inventário */}
+      {/* ── Itens ── */}
       <div className="card p-5">
-        <p className="font-display text-xs tracking-widest uppercase text-stone-500 mb-3">Inventário & Equipamentos</p>
-        <textarea
-          value={def(dados.inventario, '')}
-          onChange={e => onUpdate({ inventario: e.target.value })}
-          rows={10}
-          placeholder={`Liste seus itens aqui...\n\nEx:\n• Espada longa (1d8 cortante)\n• Armadura de Couro (+2 CA)\n• Grimório Rúnico — 8 runas de nível 1\n• Kit de Escriba Rúnico\n• Corda (15 metros)\n• 3x Poção de Cura (2d8+2 PV)`}
-          className="w-full bg-stone-800/60 border border-stone-700 px-3 py-2 text-stone-300 text-sm font-body italic focus:outline-none focus:border-parchment-500 resize-none leading-relaxed"
-        />
+        <p className="font-display text-xs tracking-widest uppercase text-stone-500 mb-3">
+          Inventário <span className="text-stone-600 normal-case font-body">({itens.length} {itens.length === 1 ? 'item' : 'itens'})</span>
+        </p>
+
+        <div className="space-y-1.5 mb-4">
+          {itens.length === 0 && (
+            <p className="font-body text-sm text-stone-600 italic text-center py-4">Nenhum item no inventário.</p>
+          )}
+          {itens.map(item => (
+            <div key={item.id} className="border border-stone-700 bg-stone-900/40">
+              <div className="flex items-center gap-3 px-3 py-2">
+                {/* Quantidade */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => updItem(item.id, { quantidade: Math.max(0, item.quantidade - 1) })}
+                    className="w-5 h-5 text-stone-600 hover:text-crimson-400 font-display text-sm leading-none">−</button>
+                  <span className="font-display text-sm text-parchment-300 w-6 text-center">{item.quantidade}</span>
+                  <button onClick={() => updItem(item.id, { quantidade: item.quantidade + 1 })}
+                    className="w-5 h-5 text-stone-600 hover:text-emerald-400 font-display text-sm leading-none">+</button>
+                </div>
+                {/* Nome */}
+                <input
+                  value={item.nome}
+                  onChange={e => updItem(item.id, { nome: e.target.value })}
+                  className="flex-1 bg-transparent font-display text-sm text-parchment-200 focus:outline-none border-b border-transparent focus:border-stone-600"
+                />
+                {item.peso !== undefined && (
+                  <span className="font-body text-xs text-stone-600 shrink-0">{item.peso}kg</span>
+                )}
+                <button
+                  onClick={() => setExpandido(expandido === item.id ? null : item.id)}
+                  className="text-stone-600 hover:text-parchment-400 text-xs font-display shrink-0"
+                >
+                  {expandido === item.id ? '▲' : '▼'}
+                </button>
+                <button onClick={() => removeItem(item.id)}
+                  className="text-stone-600 hover:text-crimson-400 text-sm shrink-0">✕</button>
+              </div>
+              {expandido === item.id && (
+                <div className="px-3 pb-3 border-t border-stone-800 pt-2 space-y-2">
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <p className="font-display text-xs text-stone-600 uppercase mb-1">Descrição</p>
+                      <textarea
+                        value={item.descricao ?? ''}
+                        onChange={e => updItem(item.id, { descricao: e.target.value || undefined })}
+                        rows={2}
+                        placeholder="Efeito, dano, propriedades especiais..."
+                        className="w-full bg-stone-800/60 border border-stone-700 px-2 py-1 text-stone-300 text-xs font-body focus:outline-none focus:border-parchment-500 resize-none"
+                      />
+                    </div>
+                    <div className="w-20">
+                      <p className="font-display text-xs text-stone-600 uppercase mb-1">Peso (kg)</p>
+                      <input
+                        type="number"
+                        value={item.peso ?? ''}
+                        onChange={e => updItem(item.id, { peso: e.target.value ? parseFloat(e.target.value) : undefined })}
+                        placeholder="0"
+                        className="w-full bg-stone-800/60 border border-stone-700 px-2 py-1 text-stone-300 text-xs font-display focus:outline-none focus:border-parchment-500"
+                        min={0}
+                        step={0.1}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Adicionar item */}
+        <div className="border border-stone-700/50 p-3 space-y-2">
+          <p className="font-display text-xs text-stone-600 uppercase">Adicionar Item</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={novoNome}
+              onChange={e => setNovoNome(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addItem()}
+              placeholder="Nome do item..."
+              className="flex-1 bg-stone-800 border border-stone-600 px-3 py-1.5 text-stone-300 text-sm focus:outline-none focus:border-parchment-500"
+            />
+            <button onClick={addItem} className="btn-secondary px-3 text-sm">+ Adicionar</button>
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={novoDesc}
+              onChange={e => setNovoDesc(e.target.value)}
+              placeholder="Descrição / efeito (opcional)"
+              className="flex-1 bg-stone-800 border border-stone-600 px-3 py-1.5 text-stone-300 text-xs focus:outline-none focus:border-parchment-500"
+            />
+            <input
+              type="number"
+              value={novoPeso}
+              onChange={e => setNovoPeso(e.target.value)}
+              placeholder="Peso"
+              className="w-20 bg-stone-800 border border-stone-600 px-2 py-1.5 text-stone-300 text-xs text-center focus:outline-none focus:border-parchment-500"
+              min={0}
+              step={0.1}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Notas */}
+      {/* ── Notas ── */}
       <div className="card p-5">
         <p className="font-display text-xs tracking-widest uppercase text-stone-500 mb-3">Notas</p>
         <textarea
@@ -570,6 +828,22 @@ function InventarioTab({ dinheiro, dados, onUpdate }: {
 // ─────────────────────────────────────────────────────────────
 // Tab: Estado (Sanidade, Corrupção, Morte)
 // ─────────────────────────────────────────────────────────────
+const EFEITOS_SANIDADE: Record<number, string> = {
+  4: '−1 em Percepção e Diplomacia',
+  3: 'Pesadelos; −1 em Vontade',
+  2: 'Ataques de Pânico (1 rodada sem Reações)',
+  1: 'Fobias (Mestre escolhe)',
+  0: 'Loucura Total — controle do Mestre',
+};
+
+const SINTOMAS_CORRUPCAO: Record<number, string> = {
+  1: 'Sombra alterada, olhos estranhos, voz ecoante',
+  2: 'Marcas pela pele, fome anormal, sonhos invasivos',
+  3: '−1 em Carisma; animais evitam você',
+  4: 'Pequena mutação física; −1 em interações sociais',
+  5: 'Você se torna um Agente Abissal (controle do Mestre)',
+};
+
 function EstadoTab({ sanidade, corrupcao, testesMorte, dados, onUpdate }: {
   sanidade: number; corrupcao: number;
   testesMorte: { sucessos: number; falhas: number };
@@ -579,10 +853,32 @@ function EstadoTab({ sanidade, corrupcao, testesMorte, dados, onUpdate }: {
   const sanFaixa = FAIXAS_SANIDADE.find(f => f.valor === sanidade) ?? FAIXAS_SANIDADE[0];
   const corFaixa = FAIXAS_CORRUPCAO.find(f => f.valor === corrupcao) ?? FAIXAS_CORRUPCAO[0];
 
+  // Active efeitos: all levels <= current sanidade that have effects (sanidade < 5)
+  const efeitosSanAtivos = Object.entries(EFEITOS_SANIDADE)
+    .filter(([v]) => Number(v) >= sanidade && sanidade < 5)
+    .sort(([a], [b]) => Number(b) - Number(a));
+
+  const sintomasCorAtivos = Object.entries(SINTOMAS_CORRUPCAO)
+    .filter(([v]) => Number(v) <= corrupcao && corrupcao > 0)
+    .sort(([a], [b]) => Number(a) - Number(b));
+
   return (
     <div className="space-y-4">
+
+      {/* ── Salvaguarda rápida (interação SAN/COR) ── */}
+      {(sanidade <= 3 || corrupcao >= 2) && (
+        <div className="card p-4 border-crimson-600/30 bg-crimson-900/10">
+          <p className="font-display text-xs tracking-widest uppercase text-crimson-500 mb-1">⚠ Interação Ativa</p>
+          <p className="font-body text-xs text-stone-400 italic">
+            {corrupcao >= 1 && '• Alta Corrupção: −1 nos testes de Sanidade. '}
+            {sanidade <= 2 && '• Sanidade baixa: +2 para ganhar Corrupção. '}
+            Cuidado com a espiral de degradação.
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Sanidade */}
+        {/* ── Sanidade ── */}
         <div className="card p-5">
           <p className="font-display text-xs tracking-widest uppercase text-stone-500 mb-3">🧠 Sanidade</p>
           <div className="text-center mb-4">
@@ -593,29 +889,63 @@ function EstadoTab({ sanidade, corrupcao, testesMorte, dados, onUpdate }: {
             </p>
           </div>
           <div className="flex justify-center gap-2 mb-4">
-            {[0,1,2,3,4,5].map(v => (
+            {[5,4,3,2,1,0].map(v => (
               <button
                 key={v}
                 onClick={() => onUpdate({ sanidade: v })}
                 className={`w-8 h-8 border font-display text-sm transition-all ${
-                  v <= sanidade
-                    ? 'border-emerald-500 bg-emerald-900/30 text-emerald-400'
-                    : 'border-stone-700 text-stone-700 hover:border-stone-500'
+                  v === sanidade
+                    ? 'border-emerald-400 bg-emerald-900/30 text-emerald-300 scale-110'
+                    : v < sanidade
+                    ? 'border-stone-700 text-stone-700 hover:border-stone-500'
+                    : 'border-emerald-700/40 bg-emerald-900/10 text-emerald-700 hover:border-emerald-600'
                 }`}
               >{v}</button>
             ))}
           </div>
-          <div className="space-y-1 text-xs font-body">
-            {FAIXAS_SANIDADE.map(f => (
-              <div key={f.valor} className={`flex items-center gap-2 ${f.valor === sanidade ? 'opacity-100' : 'opacity-40'}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${f.valor === sanidade ? 'bg-parchment-500' : 'bg-stone-700'}`} />
-                <span className={f.color}>{f.valor} — {f.label}</span>
-              </div>
-            ))}
+
+          {/* Faixas com efeitos */}
+          <div className="space-y-1.5 text-xs font-body">
+            {FAIXAS_SANIDADE.slice().reverse().map(f => {
+              const isAtivo = f.valor === sanidade;
+              const temEfeito = EFEITOS_SANIDADE[f.valor];
+              return (
+                <div key={f.valor} className={`p-2 border transition-all ${
+                  isAtivo
+                    ? 'border-parchment-500/30 bg-parchment-500/5'
+                    : 'border-transparent opacity-40'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isAtivo ? 'bg-parchment-400' : 'bg-stone-700'}`} />
+                    <span className={`font-display tracking-wide ${f.color}`}>{f.valor} — {f.label}</span>
+                  </div>
+                  {temEfeito && (
+                    <p className="text-stone-500 italic mt-0.5 pl-3.5">{temEfeito}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Efeitos ativos agora */}
+          {efeitosSanAtivos.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-stone-700/50">
+              <p className="font-display text-xs text-crimson-500 uppercase mb-1">Efeitos Ativos</p>
+              {efeitosSanAtivos.map(([v, ef]) => (
+                <p key={v} className="font-body text-xs text-crimson-400 italic">• {ef}</p>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-3 pt-3 border-t border-stone-700/50">
+            <p className="font-display text-xs text-stone-600 uppercase mb-1">Recuperação</p>
+            <p className="font-body text-xs text-stone-600 italic">
+              Descanso seguro +1 • Terapia/meditação +1 • Magia curativa +1/+2
+            </p>
           </div>
         </div>
 
-        {/* Corrupção */}
+        {/* ── Corrupção ── */}
         <div className="card p-5">
           <p className="font-display text-xs tracking-widest uppercase text-stone-500 mb-3">☠ Corrupção</p>
           <div className="text-center mb-4">
@@ -631,31 +961,67 @@ function EstadoTab({ sanidade, corrupcao, testesMorte, dados, onUpdate }: {
                 key={v}
                 onClick={() => onUpdate({ corrupcao: v })}
                 className={`w-8 h-8 border font-display text-sm transition-all ${
-                  v <= corrupcao && corrupcao > 0
-                    ? 'border-purple-500 bg-purple-900/30 text-purple-400'
-                    : v === 0 && corrupcao === 0
-                    ? 'border-sky-500 bg-sky-900/20 text-sky-400'
+                  v === corrupcao
+                    ? 'border-purple-400 bg-purple-900/30 text-purple-300 scale-110'
+                    : v < corrupcao
+                    ? 'border-purple-800/50 bg-purple-900/10 text-purple-700'
                     : 'border-stone-700 text-stone-700 hover:border-stone-500'
                 }`}
               >{v}</button>
             ))}
           </div>
-          <div className="space-y-1 text-xs font-body">
-            {FAIXAS_CORRUPCAO.map(f => (
-              <div key={f.valor} className={`flex items-center gap-2 ${f.valor === corrupcao ? 'opacity-100' : 'opacity-40'}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${f.valor === corrupcao ? 'bg-parchment-500' : 'bg-stone-700'}`} />
-                <span className={f.color}>{f.valor} — {f.label}</span>
-              </div>
-            ))}
+
+          {/* Faixas com sintomas */}
+          <div className="space-y-1.5 text-xs font-body">
+            {FAIXAS_CORRUPCAO.map(f => {
+              const isAtivo = f.valor === corrupcao;
+              const sintoma = SINTOMAS_CORRUPCAO[f.valor];
+              return (
+                <div key={f.valor} className={`p-2 border transition-all ${
+                  isAtivo
+                    ? 'border-purple-500/30 bg-purple-900/10'
+                    : 'border-transparent opacity-40'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isAtivo ? 'bg-purple-400' : 'bg-stone-700'}`} />
+                    <span className={`font-display tracking-wide ${f.color}`}>{f.valor} — {f.label}</span>
+                  </div>
+                  {sintoma && (
+                    <p className="text-stone-500 italic mt-0.5 pl-3.5">{sintoma}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Sintomas acumulados ativos */}
+          {sintomasCorAtivos.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-stone-700/50">
+              <p className="font-display text-xs text-purple-500 uppercase mb-1">Sintomas Acumulados</p>
+              {sintomasCorAtivos.map(([v, s]) => (
+                <p key={v} className="font-body text-xs text-purple-400 italic">• {s}</p>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-3 pt-3 border-t border-stone-700/50">
+            <p className="font-display text-xs text-stone-600 uppercase mb-1">Como reduzir</p>
+            <p className="font-body text-xs text-stone-600 italic">
+              Rituais especiais • Purificação • Missão santificada • Bênção de entidades
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Testes de Morte */}
+      {/* ── Testes de Morte ── */}
       <div className="card p-5">
-        <p className="font-display text-xs tracking-widest uppercase text-stone-500 mb-3">💀 Testes de Morte</p>
+        <p className="font-display text-xs tracking-widest uppercase text-stone-500 mb-1">💀 Testes de Morte</p>
         <p className="font-body text-xs text-stone-400 italic mb-4">
-          A 0 PV: role 1d20 no início de cada turno. 3 sucessos = estabilizado. 3 falhas = morte.
+          A 0 PV: role 1d20 no início de cada turno.
+          Role <span className="text-parchment-300">1</span> → 2 falhas •{' '}
+          <span className="text-stone-300">2–9</span> → 1 falha •{' '}
+          <span className="text-emerald-400">10–19</span> → 1 sucesso •{' '}
+          <span className="text-parchment-400">20</span> → acorda com 1 PV
         </p>
         <div className="grid grid-cols-2 gap-4">
           {(['sucessos', 'falhas'] as const).map(tipo => {
@@ -671,12 +1037,12 @@ function EstadoTab({ sanidade, corrupcao, testesMorte, dados, onUpdate }: {
                     <button
                       key={n}
                       onClick={() => onUpdate({ testes_morte: { ...testesMorte, [tipo]: val === n ? n - 1 : n } })}
-                      className={`w-10 h-10 border-2 transition-all ${
+                      className={`w-10 h-10 border-2 transition-all font-display ${
                         n <= val
                           ? isSucesso
                             ? 'border-emerald-500 bg-emerald-900/40 text-emerald-300'
                             : 'border-crimson-500 bg-crimson-900/40 text-crimson-300'
-                          : 'border-stone-700 text-stone-700'
+                          : 'border-stone-700 text-stone-700 hover:border-stone-500'
                       }`}
                     >
                       {isSucesso ? '✓' : '✗'}
@@ -692,9 +1058,13 @@ function EstadoTab({ sanidade, corrupcao, testesMorte, dados, onUpdate }: {
             );
           })}
         </div>
+        <div className="mt-4 pt-3 border-t border-stone-700/50 grid grid-cols-2 gap-3 text-center text-xs font-body text-stone-500 italic">
+          <p>3 sucessos → Estabilizado (fica em 0 PV, dorme 1d4h)</p>
+          <p>3 falhas → Morte</p>
+        </div>
         <button
           onClick={() => onUpdate({ testes_morte: { sucessos: 0, falhas: 0 } })}
-          className="btn-secondary mt-4 text-xs w-full"
+          className="btn-secondary mt-3 text-xs w-full"
         >
           Reiniciar Testes
         </button>

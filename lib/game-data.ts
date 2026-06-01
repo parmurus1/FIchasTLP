@@ -394,6 +394,10 @@ export const BIOGRAFIAS: Record<string, Biografia> = {
   },
 };
 
+// Bônus de proficiência de salvamento por nível
+// 'T' = Treinado (+2), 'E' = Especialista (+4), '' = sem proficiência (só mod atributo)
+export type NivelSalvamento = 'T' | 'E' | '';
+
 export interface Classe {
   nome: string;
   atributo_chave: string;
@@ -404,7 +408,25 @@ export interface Classe {
   talentos: { id: string; nome: string; desc: string }[];
   habilidade: string;
   habilidade_desc: string;
+  salvamentos: { fortitude: NivelSalvamento; reflexos: NivelSalvamento; vontade: NivelSalvamento };
 }
+
+export const BONUS_SALVAMENTO: Record<NivelSalvamento, number> = {
+  'T': 2,
+  'E': 4,
+  '': 0,
+};
+
+export const ARMADURAS = [
+  { id: 'nenhuma',      nome: 'Sem Armadura',         ca_bonus: 0,  tipo: 'nenhuma',  desc: 'CA base = 10 + mod DES' },
+  { id: 'couro',        nome: 'Armadura de Couro',     ca_bonus: 2,  tipo: 'leve',     desc: 'Leve. +2 CA. Sem penalidade de DES.' },
+  { id: 'brigantina',   nome: 'Brigantina',             ca_bonus: 3,  tipo: 'leve',     desc: 'Leve. +3 CA.' },
+  { id: 'cota-malha',   nome: 'Cota de Malha',          ca_bonus: 4,  tipo: 'media',    desc: 'Média. +4 CA. –1 DES máx.' },
+  { id: 'escamas',      nome: 'Armadura de Escamas',    ca_bonus: 5,  tipo: 'media',    desc: 'Média. +5 CA. –2 DES máx.' },
+  { id: 'placas',       nome: 'Armadura de Placas',     ca_bonus: 6,  tipo: 'pesada',   desc: 'Pesada. +6 CA. Sem bônus de DES.' },
+  { id: 'escudo-leve',  nome: '+ Escudo Leve',          ca_bonus: 1,  tipo: 'escudo',   desc: 'Escudo pequeno. +1 CA.' },
+  { id: 'escudo-torre', nome: '+ Escudo de Torre',      ca_bonus: 2,  tipo: 'escudo',   desc: 'Escudo grande. +2 CA. –1 DES.' },
+];
 
 export const CLASSES: Record<string, Classe> = {
   Arcano: {
@@ -425,6 +447,7 @@ export const CLASSES: Record<string, Classe> = {
     ],
     habilidade: 'Leitor da Trama',
     habilidade_desc: 'Reconhece imediatamente pergaminhos falsos, corrompidos ou piratas.',
+    salvamentos: { fortitude: '', reflexos: 'T', vontade: 'E' },
   },
   Alquimista: {
     nome: 'Alquimista',
@@ -444,6 +467,7 @@ export const CLASSES: Record<string, Classe> = {
     ],
     habilidade: 'Criação Rápida',
     habilidade_desc: 'Cria itens alquímicos como Ação Única, usando 1 reagente cada.',
+    salvamentos: { fortitude: 'T', reflexos: 'E', vontade: 'T' },
   },
   Bárbaro: {
     nome: 'Bárbaro',
@@ -463,6 +487,7 @@ export const CLASSES: Record<string, Classe> = {
     ],
     habilidade: 'Impetuosidade Barbarica',
     habilidade_desc: 'Sem penalidade com armas improvisadas. Qualquer objeto pesado vira arma.',
+    salvamentos: { fortitude: 'E', reflexos: 'T', vontade: 'T' },
   },
   Bardo: {
     nome: 'Bardo',
@@ -482,6 +507,7 @@ export const CLASSES: Record<string, Classe> = {
     ],
     habilidade: 'Memória Artística',
     habilidade_desc: 'Lembra qualquer fala, música ou texto das últimas 24h. +2 vs trapaças.',
+    salvamentos: { fortitude: 'T', reflexos: 'T', vontade: 'E' },
   },
   Campeão: {
     nome: 'Campeão',
@@ -501,6 +527,7 @@ export const CLASSES: Record<string, Classe> = {
     ],
     habilidade: 'Postura da Convicção',
     habilidade_desc: '+1 CA em combate. Com escudo levantado: +2 CA.',
+    salvamentos: { fortitude: 'T', reflexos: 'T', vontade: 'E' },
   },
   Clérigo: {
     nome: 'Clérigo',
@@ -520,6 +547,7 @@ export const CLASSES: Record<string, Classe> = {
     ],
     habilidade: 'Aura da Fé',
     habilidade_desc: 'Aliados em 10 pés: +1 vs morte, veneno e medo.',
+    salvamentos: { fortitude: 'T', reflexos: 'T', vontade: 'E' },
   },
   Druida: {
     nome: 'Druida',
@@ -539,6 +567,7 @@ export const CLASSES: Record<string, Classe> = {
     ],
     habilidade: 'Sangue da Mata',
     habilidade_desc: 'Resistência 1 contra dano ambiental (calor, frio, tempestade, queda leve).',
+    salvamentos: { fortitude: 'T', reflexos: 'T', vontade: 'E' },
   },
   Guerreiro: {
     nome: 'Guerreiro',
@@ -558,6 +587,7 @@ export const CLASSES: Record<string, Classe> = {
     ],
     habilidade: 'Especialização Marcial',
     habilidade_desc: 'Ignora –1 de cobertura leve. +1 em manobras com arma dominada.',
+    salvamentos: { fortitude: 'T', reflexos: 'T', vontade: 'T' },
   },
   Ladino: {
     nome: 'Ladino',
@@ -577,6 +607,7 @@ export const CLASSES: Record<string, Classe> = {
     ],
     habilidade: 'Evasão',
     habilidade_desc: 'Passa em Reflexos vs área: nenhum dano. Falha: metade do dano.',
+    salvamentos: { fortitude: 'T', reflexos: 'E', vontade: 'T' },
   },
   Monge: {
     nome: 'Monge',
@@ -596,6 +627,7 @@ export const CLASSES: Record<string, Classe> = {
     ],
     habilidade: 'Corpo de Aço, Mente de Seda',
     habilidade_desc: '+1 CA sem armadura. Mãos livres e desarmado: +2 CA.',
+    salvamentos: { fortitude: 'T', reflexos: 'E', vontade: 'E' },
   },
   Patrulheiro: {
     nome: 'Patrulheiro',
@@ -615,6 +647,7 @@ export const CLASSES: Record<string, Classe> = {
     ],
     habilidade: 'Instinto de Sobrevivência',
     habilidade_desc: 'Reduz dano de área em 2 (ou 4 se passar em Reflexos).',
+    salvamentos: { fortitude: 'T', reflexos: 'E', vontade: 'T' },
   },
 };
 
