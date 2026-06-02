@@ -56,6 +56,9 @@ export interface EstadoCombate {
   iniciativa_bonus: number;
   condicoes: string[];
   testes_morte: { sucessos: number; falhas: number };
+  armadura_id?: string;
+  escudo_id?: string;
+  ca_bonus_extra?: number;
 }
 
 export interface FichaData {
